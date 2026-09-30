@@ -4,7 +4,7 @@
 
 <p align="center"><img src="docs/demo-en.gif" width="460" alt="Agent Island: a status island growing out of the MacBook notch, showing Thinking, Reading file, Editing file, Running command, then Done"></p>
 
-A status island on your MacBook notch that shows what Claude Code is doing right now.
+See what your AI agent (Claude Code or Codex) is doing at a glance, right in your MacBook's notch.
 
 It stays tucked into the notch when idle. When Claude Code starts working, it grows out of the notch and shows the file being read, the command being run and the tokens generated this turn, with a pixel cat below acting out each state. When the work is done, it shrinks back into the notch.
 

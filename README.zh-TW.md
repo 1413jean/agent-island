@@ -4,7 +4,7 @@
 
 <p align="center"><img src="docs/demo.gif" width="460" alt="Agent Island：從瀏海長出來的狀態小島，依序顯示 Thinking、Reading file、Editing file、Running command、Done"></p>
 
-把 Claude Code 正在做的事，顯示在 MacBook 瀏海上的狀態小島。
+你的 AI Agent（Claude Code、Codex）在做什麼，MacBook 瀏海上一眼就知道。
 
 平常縮成瀏海大小、看不出來；Claude Code 開始工作時從瀏海長開，顯示它正在讀的檔案、跑的指令、這輪產生的 token 數，底下還有一隻點陣貓跟著狀態做動作；完成後縮回瀏海。
 

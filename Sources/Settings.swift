@@ -612,7 +612,7 @@ struct AboutPage: View {
                 Text("Agent Island").font(.system(size: 22, weight: .bold)).foregroundStyle(SettingsStyle.text)
                 Text(L("版本 ", "Version ") + appVersion + (appBuild.isEmpty ? "" : " (\(appBuild))") + (isDevBuild ? L(" · 測試版", " · Test build") : ""))
                     .font(.system(size: 13)).foregroundStyle(SettingsStyle.secondary)
-                Text(L("把 Claude Code 正在做的事，顯示在 MacBook 瀏海上。", "Shows what Claude Code is doing, right in your MacBook's notch."))
+                Text(L("你的 AI Agent 在做什麼，瀏海上一眼就知道。", "See what your AI agent is doing at a glance, right in your MacBook's notch."))
                     .font(.system(size: 13)).foregroundStyle(SettingsStyle.secondary)
             }
         }
