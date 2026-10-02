@@ -16,7 +16,7 @@
 
 需要 macOS 14 以上，M 系列和 Intel 的 Mac 都可以。hook 用 macOS 的 `python3` 執行（裝過 git 的 Mac 都已經有；沒有的話，第一次用時系統會請你安裝「命令列開發工具」）。
 
-之後有新版會自動通知（設定 →「關於」可以關掉或手動檢查），按「更新」會自己下載、換上新版並重新打開。
+每小時會自動檢查一次更新（用 [Sparkle](https://sparkle-project.org)）。有新版時，設定視窗最上面和選單裡會出現「**更新**」按鈕，按了可以看更新內容並安裝，裝好會自己重新打開。每個更新都有簽名，簽名對不上的不會安裝。設定 →「關於」可以關掉自動檢查。
 
 ## 小島上會看到什麼
 
@@ -72,17 +72,17 @@ Claude Code hook ──> island_hook.py（打包在 app 裡）──> ~/.claude/
 
 - **不會把任何東西傳出去。** 小島只讀你電腦上的檔案：Claude Code 的 hook 寫的狀態檔、Claude Code 的逐字稿、Codex 的工作紀錄，全部在本機處理。
 - **不花 token、不呼叫任何 AI。** 顯示的內容都是從上面那些檔案讀出來的。
-- **唯一會連網的是檢查更新**：每天向 GitHub 查一次最新版本號（只讀公開的發佈資訊，不送出任何資料），設定 →「關於」可以關掉。
+- **唯一會連網的是檢查更新**：每小時讀一次 GitHub Releases 上公開的更新清單（`appcast.xml`），不送出任何資料，設定 →「關於」可以關掉。
 - **會改動的檔案只有兩個**：你按「連接」時的 `~/.claude/settings.json`（只加小島自己的 hook，先備份），以及小島自己的設定 `~/.claude/tools/island/`。
 
 ## 開發
 
 ```sh
 ./build.sh                       # 測試版：編譯、裝到 ~/Applications、重新打開
-./release.sh 1.1.0 "這版的說明"   # 改版本號、打包 zip、打 tag、上傳到 GitHub Releases（需要 gh 已登入）
+./release.sh 1.1.0 "這版的說明"   # 改版本號、打包 zip、簽名、產生 appcast.xml、打 tag、上傳到 GitHub Releases
 ```
 
-`build.sh` 裝的是**測試版**（有錄影用的示範模式、不自動更新）；`release.sh` 發佈的是大家下載的**正式版**。`scripts/bundle.sh` 負責把程式、hook、音效包成 `.app`，上面兩個腳本都用它。
+`build.sh` 裝的是**測試版**（有錄影用的示範模式、不自動更新）；`release.sh` 發佈的是大家下載的**正式版**。發佈的更新檔用 Sparkle 的 EdDSA 金鑰簽名，私鑰在發佈者的鑰匙圈（帳號 `agent-island`）；`scripts/fetch-sparkle.sh` 會把固定版本的 Sparkle 下載到 `vendor/`。`scripts/bundle.sh` 負責把程式、hook、音效包成 `.app`，上面兩個腳本都用它。
 
 ## 授權
 

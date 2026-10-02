@@ -1391,14 +1391,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         statusItem.menu = menu
         LoginItem.setUpOnFirstLaunch()
 
-        // 自動檢查更新；點更新通知直接打開設定的「關於」
+        // 自動更新（Sparkle，每小時檢查）；點更新通知直接打開更新視窗
         UNUserNotificationCenter.current().delegate = self
         DoneNotifier.start()
-        // 測試版不自動檢查：不然正式版一出來就會把測試版換掉（「關於」裡還是可以手動檢查）
-        Updater.shared.startAutoCheck { [weak self] in !isDevBuild && (self?.tuning.t.autoUpdate ?? false) }
-        if isDevBuild, CommandLine.arguments.contains("--install-update-now") {
-            Updater.shared.installWhenFound = true
-            Updater.shared.check(userInitiated: true)
+        Updater.shared.start(automatic: tuning.t.autoUpdate)
+        // 測試用（只有測試版）：--check-updates-now 在背景檢查一次（找到就出現標題列按鈕）；
+        // --auto-install-update 找到就直接下載、安裝、重開
+        if isDevBuild, CommandLine.arguments.contains("--check-updates-now") || CommandLine.arguments.contains("--auto-install-update") {
+            Updater.shared.testAutoInstall = CommandLine.arguments.contains("--auto-install-update")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { Updater.shared.checkInBackground() }
         }
         // 錄 README 動圖用：啟動參數 --demo-flow，1.5 秒後自動播一次「一般任務」
         if isDevBuild, CommandLine.arguments.contains("--demo-flow") {
@@ -1529,14 +1530,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         }
     }
 
-    @objc func openUpdate() { openSettings(.about) }
+    @objc func openUpdate() { Updater.shared.checkNow() }
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
         if let tty = response.notification.request.content.userInfo["tty"] as? String {
             DoneNotifier.focusTerminalTab(tty)          // 完成通知：回到那個 Terminal 分頁
         } else if response.notification.request.content.threadIdentifier != "done" {
-            openSettings(.about)                        // 更新通知
+            Updater.shared.checkNow()                   // 更新通知：直接打開更新視窗
         }
         completionHandler()
     }

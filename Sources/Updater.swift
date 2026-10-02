@@ -1,133 +1,128 @@
 import AppKit
 import Foundation
+import Sparkle
 import UserNotifications
 
-// 自動更新：去 GitHub Releases 看最新版本，比目前新就提醒；按「更新」會下載、換掉 app、重新打開。
-// 發佈新版用 repo 裡的 release.sh（會打包 zip 上傳到 GitHub Releases）。
-final class Updater: ObservableObject {
+// 自動更新（Sparkle）：每小時在背景看一次 GitHub Releases 上的 appcast.xml，有新版不跳視窗打擾，
+// 只在設定視窗標題列、選單列選單放一顆「更新到 x.y.z」，再發一則通知；按下去才打開 Sparkle 的更新視窗（看更新內容、安裝）。
+// 每個更新檔都用 EdDSA 金鑰簽名（私鑰只在發佈者的鑰匙圈裡），簽名對不上的更新 Sparkle 不會裝。
+// 發佈新版用 repo 裡的 release.sh（打包 zip、簽名、產生 appcast.xml、上傳到 GitHub Releases）。
+final class Updater: NSObject, ObservableObject {
     static let shared = Updater()
-    static let repo = "1413jean/agent-island"
-    // 測試用：`defaults write com.jean.claudeisland updateAPIBase http://127.0.0.1:8765` 可以把更新來源指到本機
-    static var apiBase: String { (isDevBuild ? UserDefaults.standard.string(forKey: "updateAPIBase") : nil) ?? "https://api.github.com" }
-    var installWhenFound = false                    // 測試用：啟動參數 --install-update-now，找到新版就直接更新
 
     enum State: Equatable {
         case idle
-        case checking
         case upToDate
         case available(String)          // 新版本號
-        case downloading
         case failed(String)
     }
 
     @Published private(set) var state: State = .idle
-    private(set) var downloadURL: URL?
-    private var timer: Timer?
+    @Published private(set) var lastChecked: Date?
+    private var updater: SPUUpdater!
+    private var userDriver: SPUStandardUserDriver!
     private var notifiedVersion = UserDefaults.standard.string(forKey: "notifiedUpdateVersion")
+    var testAutoInstall = false     // 測試用（只有測試版）：啟動參數 --auto-install-update，找到新版就直接下載、安裝、重開
 
     var latestVersion: String? { if case .available(let v) = state { return v } else { return nil } }
 
-    // 開 app 後 10 秒檢查一次，之後每天一次（設定裡可以關）
-    func startAutoCheck(enabled: @escaping () -> Bool) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 10) { [weak self] in if enabled() { self?.check(userInitiated: false) } }
-        timer = Timer.scheduledTimer(withTimeInterval: 24 * 3600, repeats: true) { [weak self] _ in
-            if enabled() { self?.check(userInitiated: false) }
-        }
+    // 開 app 時呼叫：enabled＝設定裡的「自動檢查更新」
+    func start(automatic enabled: Bool) {
+        userDriver = SPUStandardUserDriver(hostBundle: .main, delegate: self)
+        updater = SPUUpdater(hostBundle: .main, applicationBundle: .main, userDriver: userDriver, delegate: self)
+        do { try updater.start() } catch { state = .failed(error.localizedDescription) }
+        setAutomatic(enabled)
+        lastChecked = updater.lastUpdateCheckDate
     }
 
-    func check(userInitiated: Bool) {
-        if case .downloading = state { return }
-        state = .checking
-        var req = URLRequest(url: URL(string: "\(Self.apiBase)/repos/\(Self.repo)/releases/latest")!)
-        req.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-        req.timeoutInterval = 20
-        URLSession.shared.dataTask(with: req) { [weak self] data, resp, err in
-            DispatchQueue.main.async { self?.handle(data, resp as? HTTPURLResponse, err, userInitiated) }
-        }.resume()
+    // 測試版不自動檢查：不然正式版一出來就會把測試版換掉（手動檢查還是可以）
+    func setAutomatic(_ on: Bool) {
+        updater?.automaticallyChecksForUpdates = on && !isDevBuild
+        updater?.updateCheckInterval = 3600     // 每小時一次（Sparkle 最短就是一小時）
     }
 
-    private func handle(_ data: Data?, _ resp: HTTPURLResponse?, _ err: Error?, _ userInitiated: Bool) {
-        if let err { state = .failed(L("連不上 GitHub（\(err.localizedDescription)）", "Can't reach GitHub (\(err.localizedDescription))")); return }
-        guard resp?.statusCode == 200, let data,
-              let o = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let tag = o["tag_name"] as? String else {
-            state = .failed(resp?.statusCode == 404 ? L("還沒有發佈的版本（或 repo 不是公開的）", "No releases yet (or the repo isn't public)") : L("讀不到版本資訊", "Couldn't read the version info"))
-            return
+    // 背景檢查一次（不跳視窗；找到新版就出現標題列按鈕）
+    func checkInBackground() {
+        if testAutoInstall {                    // 自動下載要在自動檢查打開時才會作用
+            updater?.automaticallyChecksForUpdates = true
+            updater?.automaticallyDownloadsUpdates = true
         }
-        let version = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
-        let assets = o["assets"] as? [[String: Any]] ?? []
-        downloadURL = assets.first { ($0["name"] as? String)?.hasSuffix(".zip") == true }
-            .flatMap { $0["browser_download_url"] as? String }.flatMap(URL.init(string:))
-        guard Self.isNewer(version, than: appVersion), downloadURL != nil else { state = .upToDate; return }
-        state = .available(version)
-        if installWhenFound { installWhenFound = false; install(); return }
-        if notifiedVersion != version {                    // 同一個新版本只提醒一次
-            notifiedVersion = version
-            UserDefaults.standard.set(version, forKey: "notifiedUpdateVersion")
-            notify(version)
-        }
+        updater?.checkForUpdatesInBackground()
     }
 
-    static func isNewer(_ a: String, than b: String) -> Bool {
-        let x = a.split(separator: ".").map { Int($0) ?? 0 }, y = b.split(separator: ".").map { Int($0) ?? 0 }
-        for i in 0..<max(x.count, y.count) {
-            let p = i < x.count ? x[i] : 0, q = i < y.count ? y[i] : 0
-            if p != q { return p > q }
-        }
-        return false
+    // 按「檢查更新」或標題列的「更新」：交給 Sparkle 的視窗（有新版就顯示更新內容和安裝按鈕）
+    func checkNow() {
+        NSApp.activate(ignoringOtherApps: true)
+        updater?.checkForUpdates()
     }
 
     private func notify(_ version: String) {
+        guard notifiedVersion != version else { return }          // 同一個新版本只提醒一次
+        notifiedVersion = version
+        UserDefaults.standard.set(version, forKey: "notifiedUpdateVersion")
         let c = UNUserNotificationCenter.current()
         c.requestAuthorization(options: [.alert]) { ok, _ in
             guard ok else { return }
             let n = UNMutableNotificationContent()
             n.title = L("Agent Island 有新版本", "Agent Island update available")
-            n.body = L("\(version) 可以更新了，點這裡或從選單列的小島圖示更新。", "Version \(version) is ready. Click here, or update from the island's menu bar icon.")
+            n.body = L("\(version) 可以更新了，點這裡或從設定視窗的標題列更新。", "Version \(version) is ready. Click here, or update from the top of the Settings window.")
+            n.threadIdentifier = "update"
             c.add(UNNotificationRequest(identifier: "update-\(version)", content: n, trigger: nil))
         }
     }
+}
 
-    // 下載 zip → 解壓 → 確認是同一個 app → 把舊的丟到垃圾桶、換上新的 → 重新打開
-    func install() {
-        guard let url = downloadURL, let version = latestVersion else { return }
-        state = .downloading
-        URLSession.shared.downloadTask(with: url) { [weak self] file, _, err in
-            let result: String? = {
-                guard let file, err == nil else { return L("下載失敗", "Download failed") }
-                return Self.replaceApp(with: file, expecting: version)
-            }()
-            DispatchQueue.main.async {
-                if let result { self?.state = .failed(result) }
-            }
-        }.resume()
+extension Updater: SPUUpdaterDelegate {
+    // 測試版可以把更新來源指到本機：`defaults write com.jean.claudeisland updateFeedURL http://127.0.0.1:8765/appcast.xml`
+    func feedURLString(for updater: SPUUpdater) -> String? {
+        isDevBuild ? UserDefaults.standard.string(forKey: "updateFeedURL") : nil
     }
 
-    private static func replaceApp(with zip: URL, expecting version: String) -> String? {
-        let fm = FileManager.default
-        let dir = fm.temporaryDirectory.appendingPathComponent("AgentIslandUpdate-\(UUID().uuidString)")
-        do { try fm.createDirectory(at: dir, withIntermediateDirectories: true) } catch { return L("沒辦法建立暫存資料夾", "Couldn't create a temporary folder") }
-        let unzip = Process()
-        unzip.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
-        unzip.arguments = ["-x", "-k", zip.path, dir.path]
-        do { try unzip.run(); unzip.waitUntilExit() } catch { return L("解壓縮失敗", "Couldn't unzip the update") }
-        guard unzip.terminationStatus == 0,
-              let app = (try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil))?.first(where: { $0.pathExtension == "app" }),
-              let info = Bundle(url: app)?.infoDictionary,
-              info["CFBundleIdentifier"] as? String == Bundle.main.bundleIdentifier else { return L("下載的檔案不是 Agent Island", "The download isn't Agent Island") }
-        let current = Bundle.main.bundleURL
-        do {
-            try fm.trashItem(at: current, resultingItemURL: nil)
-            try fm.moveItem(at: app, to: current)
-        } catch {
-            return L("沒辦法換掉舊版（\(error.localizedDescription)）", "Couldn't replace the old version (\(error.localizedDescription))")
+    func updater(_ updater: SPUUpdater, willInstallUpdateOnQuit item: SUAppcastItem,
+                 immediateInstallationBlock immediateInstallHandler: @escaping () -> Void) -> Bool {
+        guard testAutoInstall else { return false }
+        immediateInstallHandler()
+        return true
+    }
+
+    func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
+        DispatchQueue.main.async {
+            self.state = .available(item.displayVersionString)
+            self.lastChecked = updater.lastUpdateCheckDate
         }
-        // 等目前這個 app 結束後再打開新版
-        let relaunch = Process()
-        relaunch.executableURL = URL(fileURLWithPath: "/bin/sh")
-        relaunch.arguments = ["-c", "sleep 1; open \"\(current.path)\""]
-        try? relaunch.run()
-        DispatchQueue.main.async { NSApp.terminate(nil) }
-        return nil
+    }
+
+    func updaterDidNotFindUpdate(_ updater: SPUUpdater) {
+        DispatchQueue.main.async {
+            self.state = .upToDate
+            self.lastChecked = updater.lastUpdateCheckDate
+        }
+    }
+
+    func updater(_ updater: SPUUpdater, didAbortWithError error: Error) {
+        let e = error as NSError
+        guard e.domain == SUSparkleErrorDomain, e.code != Int(SUError.noUpdateError.rawValue) else { return }
+        DispatchQueue.main.async { self.state = .failed(error.localizedDescription) }
+    }
+}
+
+extension Updater: SPUStandardUserDriverDelegate {
+    // 背景找到新版時不跳 Sparkle 的視窗（選單列 app 突然跳視窗很打擾），改成標題列按鈕＋通知
+    var supportsGentleScheduledUpdateReminders: Bool { true }
+
+    func standardUserDriverShouldHandleShowingScheduledUpdate(_ update: SUAppcastItem, andInImmediateFocus immediateFocus: Bool) -> Bool {
+        false
+    }
+
+    func standardUserDriverWillHandleShowingUpdate(_ handleShowingUpdate: Bool, forUpdate update: SUAppcastItem, state: SPUUserUpdateState) {
+        let v = update.displayVersionString
+        DispatchQueue.main.async {
+            self.state = .available(v)
+            if !handleShowingUpdate && !state.userInitiated { self.notify(v) }
+        }
+    }
+
+    func standardUserDriverWillFinishUpdateSession() {
+        DispatchQueue.main.async { self.lastChecked = self.updater.lastUpdateCheckDate }
     }
 }

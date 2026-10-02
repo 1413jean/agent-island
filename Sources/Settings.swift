@@ -125,8 +125,9 @@ private struct Sidebar: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text("Agent Island").font(.system(size: 14, weight: .semibold)).foregroundStyle(SettingsStyle.text)
+                UpdateBadge()
             }
             .padding(.horizontal, 10)
             .padding(.top, 42)                           // 讓出左上角的紅黃綠按鈕
@@ -617,12 +618,12 @@ struct AboutPage: View {
             }
         }
         SettingSection(title: L("更新", "Updates")) {
-            ToggleRow(title: L("自動檢查更新", "Check for updates automatically"), detail: L("每天去 GitHub 看一次有沒有新版本，有的話通知你。", "Checks GitHub once a day and lets you know when a new version is out."), isOn: $store.t.autoUpdate)
+            ToggleRow(title: L("自動檢查更新", "Check for updates automatically"), detail: L("每小時去 GitHub 看一次有沒有新版本，有的話在設定視窗最上面和選單裡提醒你。", "Checks GitHub every hour. When a new version is out, you'll see it at the top of Settings and in the menu."), isOn: $store.t.autoUpdate)
+                .onChange(of: store.t.autoUpdate) { _, on in updater.setAutomatic(on) }
             SettingRow(title: L("目前版本 \(appVersion)", "Current version \(appVersion)"), detail: updateDetail, last: true) {
                 switch updater.state {
-                case .available(let v): Button(L("更新到 \(v)", "Update to \(v)")) { updater.install() }
-                case .checking, .downloading: ProgressView().controlSize(.small)
-                default: Button(L("檢查更新", "Check for updates")) { updater.check(userInitiated: true) }
+                case .available(let v): Button(L("更新到 \(v)", "Update to \(v)")) { updater.checkNow() }
+                default: Button(L("檢查更新", "Check for updates")) { updater.checkNow() }
                 }
             }
         }
@@ -647,12 +648,11 @@ struct AboutPage: View {
 
 extension AboutPage {
     var updateDetail: String {
+        let when = updater.lastChecked.map { L("上次檢查：", "Last checked: ") + $0.formatted(date: .abbreviated, time: .shortened) } ?? ""
         switch updater.state {
-        case .idle: return L("按「檢查更新」看看有沒有新版本。", "Click Check for updates to see if there's a new version.")
-        case .checking: return L("檢查中…", "Checking…")
-        case .upToDate: return L("已經是最新版本。", "You're on the latest version.")
-        case .available(let v): return L("有新版本 \(v)。按「更新」會自動下載、換上新版並重新打開。", "Version \(v) is available. Update downloads it, swaps it in and reopens the app.")
-        case .downloading: return L("下載新版中，完成後會自動重新打開…", "Downloading the new version; the app will reopen when it's done…")
+        case .idle: return when.isEmpty ? L("按「檢查更新」看看有沒有新版本。", "Click Check for updates to see if there's a new version.") : when
+        case .upToDate: return L("已經是最新版本。", "You're on the latest version.") + (when.isEmpty ? "" : " " + when)
+        case .available(let v): return L("有新版本 \(v)。按「更新」可以看更新內容並安裝，裝好會自動重新打開。", "Version \(v) is available. Click Update to see what's new and install it; the app reopens when it's done.")
         case .failed(let why): return L("檢查失敗：\(why)", "Check failed: \(why)")
         }
     }
@@ -754,5 +754,29 @@ struct LicensesView: View {
         }
         .padding(20)
         .frame(width: 560, height: 460)
+    }
+}
+
+// 標題列的更新按鈕：有新版本時才出現，按了打開 Sparkle 的更新視窗
+private struct UpdateBadge: View {
+    @ObservedObject private var updater = Updater.shared
+    @State private var hover = false
+
+    var body: some View {
+        if let v = updater.latestVersion {
+            Button { updater.checkNow() } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "arrow.down.circle.fill").font(.system(size: 12, weight: .semibold))
+                    Text(L("更新到 \(v)", "Update to \(v)")).font(.system(size: 12, weight: .semibold))
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 10)
+                .frame(height: 26)
+                .background(Capsule().fill(SettingsStyle.accent.opacity(hover ? 1 : 0.88)))
+            }
+            .buttonStyle(.plain)
+            .onHover { hover = $0 }
+            .help(L("有新版本，按這裡看更新內容並安裝", "A new version is available. Click to see what's new and install it."))
+        }
     }
 }

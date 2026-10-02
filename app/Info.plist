@@ -30,5 +30,13 @@
 	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>© 2026 Jean</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUFeedURL</key>
+	<string>https://github.com/1413jean/agent-island/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>ciDW+P+Fz/PnIJ0RunfU4ojEhRGG7Nu7bI8LmxcrMjk=</string>
+	<key>SUScheduledCheckInterval</key>
+	<integer>3600</integer>
 </dict>
 </plist>

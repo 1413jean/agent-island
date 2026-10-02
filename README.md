@@ -16,7 +16,7 @@ It stays tucked into the notch when idle. When Claude Code starts working, it gr
 
 Requires macOS 14 or later, on Apple silicon or Intel. The hook runs with macOS's `python3` (already there if you've installed git; if not, macOS asks you to install the Command Line Tools the first time).
 
-You'll be notified when a new version is out (turn this off or check manually in Settings → About). Click **Update** and it downloads, swaps in the new version and relaunches by itself.
+It checks for updates every hour (via [Sparkle](https://sparkle-project.org)). When a new version is out, an **Update** button shows up at the top of Settings and in the menu. Click it to see what's new and install; the app relaunches by itself. Every update is signed, and the app won't install one whose signature doesn't match. Turn automatic checks off in Settings → About.
 
 ## What you'll see on the island
 
@@ -72,17 +72,17 @@ Claude Code hook ──> island_hook.py (bundled in the app) ──> ~/.claude/t
 
 - **Nothing leaves your Mac.** The island only reads local files: the state files written by the Claude Code hook, Claude Code's transcripts and Codex's logs. Everything is processed on your machine.
 - **No tokens spent, no AI calls.** Everything it shows comes from the files above.
-- **The only network access is the update check**: once a day it asks GitHub for the latest version number (it only reads public release info and sends nothing). You can turn it off in Settings → About.
+- **The only network access is the update check**: once an hour it reads the public update list (`appcast.xml`) from GitHub Releases and sends nothing. You can turn it off in Settings → About.
 - **Only two places are ever modified**: `~/.claude/settings.json` when you click Connect (it only adds the island's own hooks, after a backup), and the island's own settings in `~/.claude/tools/island/`.
 
 ## Development
 
 ```sh
 ./build.sh                           # test build: build, install to ~/Applications, relaunch
-./release.sh 1.1.0 "What's new"      # bump version, zip, tag, upload to GitHub Releases (needs gh signed in)
+./release.sh 1.1.0 "What's new"      # bump version, zip, sign, write appcast.xml, tag, upload to GitHub Releases
 ```
 
-`build.sh` makes a **test build** (demo mode for screen recordings, no auto-update); `release.sh` makes the **release build** everyone downloads. `scripts/bundle.sh` packs the binary, hook and sounds into the `.app`; both scripts above use it.
+`build.sh` makes a **test build** (demo mode for screen recordings, no auto-update); `release.sh` makes the **release build** everyone downloads. Releases are signed with a Sparkle EdDSA key stored in the publisher's Keychain (account `agent-island`); `scripts/fetch-sparkle.sh` downloads a pinned Sparkle into `vendor/`. `scripts/bundle.sh` packs the binary, hook and sounds into the `.app`; both scripts above use it.
 
 ## License
 
