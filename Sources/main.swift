@@ -942,6 +942,7 @@ struct IslandBody: View {
     let collapsed: CGSize
     let expanded: Bool
     @State private var collapses = 0
+    @State private var expandedAt = Date.distantPast
 
     var body: some View {
         let d = self.d.shown(t)
@@ -982,7 +983,9 @@ struct IslandBody: View {
                     }
                 }
                 .onChange(of: expanded) { _, now in
-                    if !now, t.bounce > 0 { collapses += 1 }
+                    // 剛展開就收（不到 0.6 秒）不再補彈一下，不然看起來像連彈兩次
+                    if now { expandedAt = Date() }
+                    else if t.bounce > 0, Date().timeIntervalSince(expandedAt) > 0.6 { collapses += 1 }
                 }
 
             VStack(spacing: t.lineGap) {
@@ -1171,6 +1174,7 @@ final class IslandController {
     let top: CGFloat
     let collapsed: CGSize
     private var leftAt: Date?
+    private var enteredAt: Date?
     static let panelHeight: CGFloat = 240
 
     init(screen: NSScreen, primary: Bool, model: StateModel, tuning: TuningStore, presence: Presence) {
@@ -1206,7 +1210,7 @@ final class IslandController {
 
     func close() { panel.orderOut(nil) }
 
-    // 滑鼠在熱區裡就展開；離開後稍等一下才收，免得邊緣抖動時一直開開關關。
+    // 滑鼠在熱區裡停一下（0.15 秒）才展開，只是擦過不會打開；離開後稍等一下才收，免得邊緣抖動時一直開開關關。
     func trackMouse(_ p: NSPoint, model: StateModel, tuning: TuningStore, presence: Presence) {
         let exp = isExpanded(model: model, tuning: tuning, hover: state.hover,
                              active: presence.active == id, yielded: state.yielded)
@@ -1231,12 +1235,18 @@ final class IslandController {
 
         if zone.contains(p) {
             leftAt = nil
-            if !state.hover { state.hover = true }
-        } else if state.hover {
-            if leftAt == nil { leftAt = Date() }
-            if let l = leftAt, Date().timeIntervalSince(l) > 0.35 {
-                state.hover = false
-                leftAt = nil
+            if !state.hover {
+                if enteredAt == nil { enteredAt = Date() }
+                if exp || Date().timeIntervalSince(enteredAt!) > 0.15 { state.hover = true; enteredAt = nil }
+            }
+        } else {
+            enteredAt = nil                        // 擦過就走：下次要重新停留才算
+            if state.hover {
+                if leftAt == nil { leftAt = Date() }
+                if let l = leftAt, Date().timeIntervalSince(l) > 0.35 {
+                    state.hover = false
+                    leftAt = nil
+                }
             }
         }
     }
