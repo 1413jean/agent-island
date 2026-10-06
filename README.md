@@ -2,7 +2,7 @@
 
 **English** ｜ [繁體中文](README.zh-TW.md)
 
-**Version 1.0.2** · macOS 14+ · Apple silicon & Intel · [MIT License](LICENSE) · [Changelog](CHANGELOG.md)
+**Version 1.0.3** · macOS 14+ · Apple silicon & Intel · [MIT License](LICENSE) · [Changelog](CHANGELOG.md)
 
 <p align="center"><img src="docs/demo-en.gif" width="460" alt="Agent Island: a status island growing out of the MacBook notch, showing Thinking, Reading file, Editing file, Running command, then Done"></p>
 

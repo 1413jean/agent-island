@@ -2,7 +2,7 @@
 
 [English](README.md) ｜ **繁體中文**
 
-**版本 1.0.2** · macOS 14 以上 · M 系列與 Intel · [MIT 授權](LICENSE) · [變更紀錄](CHANGELOG.md)
+**版本 1.0.3** · macOS 14 以上 · M 系列與 Intel · [MIT 授權](LICENSE) · [變更紀錄](CHANGELOG.md)
 
 <p align="center"><img src="docs/demo.gif" width="460" alt="Agent Island：從瀏海長出來的狀態小島，依序顯示 Thinking、Reading file、Editing file、Running command、Done"></p>
 
