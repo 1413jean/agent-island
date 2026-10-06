@@ -86,4 +86,6 @@ Claude Code hook ──> island_hook.py（打包在 app 裡）──> ~/.claude/
 
 ## 授權
 
-用到的開源元件和授權聲明見 `THIRD_PARTY_NOTICES.md`（app 內：設定 →「關於」→「第三方授權…」）。
+Agent Island 採用 [MIT 授權](LICENSE)：可以自由使用、修改、分享，只要保留版權和授權聲明。
+
+用到的開源元件和它們的授權聲明見 `THIRD_PARTY_NOTICES.md`（app 內：設定 →「關於」→「第三方授權…」）。

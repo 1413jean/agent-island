@@ -86,4 +86,6 @@ Claude Code hook ──> island_hook.py (bundled in the app) ──> ~/.claude/t
 
 ## License
 
-Open-source components and their notices are listed in `THIRD_PARTY_NOTICES.md` (in the app: Settings → About → Third-party licenses…).
+Agent Island is released under the [MIT License](LICENSE): you're free to use, modify and share it, as long as you keep the copyright and license notice.
+
+Open-source components it uses, and their notices, are listed in `THIRD_PARTY_NOTICES.md` (in the app: Settings → About → Third-party licenses…).
