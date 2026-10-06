@@ -1519,7 +1519,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
 
     @objc func openAbout() {
         NSApp.activate(ignoringOtherApps: true)
-        let credits = NSAttributedString(string: L("你的 AI Agent 在做什麼，瀏海上一眼就知道。\n第三方授權見 設定 → 關於。", "See what your AI agent is doing at a glance, right in your MacBook's notch.\nThird-party licenses: Settings → About."),
+        let credits = NSAttributedString(string: L("你的 AI Agent 在做什麼，瀏海上一眼就知道。\nMIT 授權，詳見 設定 → 關於。", "See what your AI agent is doing at a glance, right in your MacBook's notch.\nMIT License. Details: Settings → About."),
                                          attributes: [.font: NSFont.systemFont(ofSize: 11), .foregroundColor: NSColor.secondaryLabelColor])
         NSApp.orderFrontStandardAboutPanel(options: [.credits: credits])
     }

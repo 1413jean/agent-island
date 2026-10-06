@@ -28,7 +28,7 @@ ditto vendor/Sparkle/Sparkle.framework "$APP/Contents/Frameworks/Sparkle.framewo
 # 測試版可以從本機（http://127.0.0.1）抓更新清單，方便測自動更新；正式版只走 https
 [ "$DEV" = "1" ] && /usr/libexec/PlistBuddy -c "Add :NSAppTransportSecurity:NSAllowsLocalNetworking bool true" "$APP/Contents/Info.plist"
 cp app/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
-cp THIRD_PARTY_NOTICES.md "$APP/Contents/Resources/"   # 第三方授權（設定 → 關於 裡看得到）
+cp LICENSE THIRD_PARTY_NOTICES.md "$APP/Contents/Resources/"   # 自己的 MIT 授權＋第三方授權（設定 → 關於 裡看得到）
 # hook 程式、音效都打包進 app（系統通知由 app 自己發），別人裝好 app 就能用，不需要這個 repo
 ditto hook "$APP/Contents/Resources/hook"
 ditto sounds "$APP/Contents/Resources/sounds"

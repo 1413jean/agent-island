@@ -632,8 +632,8 @@ struct AboutPage: View {
                 Link("github.com/1413jean/agent-island", destination: URL(string: "https://github.com/1413jean/agent-island")!)
                     .font(.system(size: 13))
             }
-            SettingRow(title: L("開源授權", "Open-source licenses"), detail: L("用到的開源元件和它們的授權聲明。", "Open-source components used and their license notices."), last: true) {
-                Button(L("第三方授權…", "Third-party licenses…")) { showLicenses = true }
+            SettingRow(title: L("授權", "License"), detail: L("Agent Island 採用 MIT 授權：可以免費使用、修改、分享，也可以用在商業用途，只要保留版權和授權聲明。", "Agent Island is MIT licensed: you can use it for free, modify it, share it and use it commercially, as long as you keep the copyright and license notice."), last: true) {
+                Button(L("查看授權…", "View licenses…")) { showLicenses = true }
             }
         }
         .sheet(isPresented: $showLicenses) { LicensesView() }
@@ -735,15 +735,17 @@ struct ClaudeCodePage: View {
 // 第三方授權：打包在 app 裡的 THIRD_PARTY_NOTICES.md（MIT 要求散布時附上原作者的版權聲明）
 struct LicensesView: View {
     @Environment(\.dismiss) private var dismiss
+    // 先放 Agent Island 自己的 MIT 授權，再接用到的第三方元件授權
     private let text: String = {
-        guard let url = Bundle.main.url(forResource: "THIRD_PARTY_NOTICES", withExtension: "md"),
-              let s = try? String(contentsOf: url, encoding: .utf8) else { return L("找不到授權檔案。", "License file not found.") }
-        return s
+        let own = Bundle.main.url(forResource: "LICENSE", withExtension: nil).flatMap { try? String(contentsOf: $0, encoding: .utf8) }
+        let third = Bundle.main.url(forResource: "THIRD_PARTY_NOTICES", withExtension: "md").flatMap { try? String(contentsOf: $0, encoding: .utf8) }
+        let parts = [own.map { "# Agent Island\n\n" + $0 }, third].compactMap { $0 }
+        return parts.isEmpty ? L("找不到授權檔案。", "License file not found.") : parts.joined(separator: "\n\n")
     }()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(L("第三方授權", "Third-party licenses")).font(.title3.bold())
+            Text(L("授權", "Licenses")).font(.title3.bold())
             ScrollView {
                 Text(text)
                     .font(.system(size: 11, design: .monospaced))

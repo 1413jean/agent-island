@@ -2,8 +2,8 @@
 
 ## 1.0.2 — 2026-10-06
 
-- **License:** the project now has its own [MIT License](LICENSE). Before, the repo only listed the licenses of third-party components (`THIRD_PARTY_NOTICES.md`), which didn't cover Agent Island's own code, so it wasn't clear what others could do with it. Thanks to a friend for pointing this out.
-  **授權：** 補上整個專案的 [MIT 授權](LICENSE)。之前 repo 裡只有用到的第三方元件的授權（`THIRD_PARTY_NOTICES.md`），沒有涵蓋 Agent Island 自己的程式，大家不確定能用到什麼程度。謝謝朋友提醒。
+- **License:** Agent Island is now [MIT licensed](LICENSE): you can use it for free, modify it, share it and use it commercially, as long as you keep the copyright and license notice. You can read it in the app under Settings → About → View licenses.
+  **授權：** Agent Island 採用 [MIT 授權](LICENSE)：可以免費使用、修改、分享，也可以用在商業用途，只要保留版權和授權聲明。app 裡在設定 →「關於」→「查看授權…」看得到。
 - **Hover:** in "On hover" mode, the island now waits for a short pause (0.15 s) before expanding, so brushing past the notch no longer opens it. A quick open-and-close no longer bounces twice.
   **滑鼠靠近：** 「滑鼠靠近」模式要停一下（0.15 秒）才展開，只是擦過不會打開；剛展開就收時不會再連彈兩次。
 - README: added who it's for, plus how to update, uninstall and report issues.

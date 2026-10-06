@@ -65,7 +65,7 @@ Menu bar cat icon → **Settings…** (⌘,):
 | Notifications | Pop up when a task ends, system notifications, done sound |
 | Appearance | What to show (detail, state text, token count; turn all off for the smallest island), icon style, cat scene, bottom glow, font sizes |
 | Size & Frame | Width, padding, line spacing, notch curve, corner radius, bounce |
-| About | Version, check for updates, third-party licenses, quit |
+| About | Version, check for updates, licenses, quit |
 
 Menu bar icon → **Quit** (⌘Q) closes it; open it again from Applications or Spotlight. Opening the app again while it's running brings up Settings.
 
@@ -112,6 +112,6 @@ Claude Code hook ──> island_hook.py (bundled in the app) ──> ~/.claude/t
 
 ## License
 
-Agent Island is released under the [MIT License](LICENSE): you're free to use, modify and share it, as long as you keep the copyright and license notice.
+Agent Island is released under the [MIT License](LICENSE): you can use it for free, modify it, share it and use it commercially, as long as you keep the copyright and license notice.
 
-Open-source components it uses, and their notices, are listed in `THIRD_PARTY_NOTICES.md` (in the app: Settings → About → Third-party licenses…).
+Open-source components it uses, and their notices, are listed in `THIRD_PARTY_NOTICES.md` (in the app: Settings → About → View licenses…).
