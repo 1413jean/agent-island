@@ -2,11 +2,24 @@
 
 **English** ｜ [繁體中文](README.zh-TW.md)
 
+**Version 1.0.2** · macOS 14+ · Apple silicon & Intel · [MIT License](LICENSE) · [Changelog](CHANGELOG.md)
+
 <p align="center"><img src="docs/demo-en.gif" width="460" alt="Agent Island: a status island growing out of the MacBook notch, showing Thinking, Reading file, Editing file, Running command, then Done"></p>
 
 See what your AI agent (Claude Code or Codex) is doing at a glance, right in your MacBook's notch.
 
 It stays tucked into the notch when idle. When Claude Code starts working, it grows out of the notch and shows the file being read, the command being run and the tokens generated this turn, with a pixel cat below acting out each state. When the work is done, it shrinks back into the notch.
+
+## Who it's for
+
+| If you… | Agent Island helps you… |
+| --- | --- |
+| send Claude Code or Codex a prompt and switch to something else | see at a glance whether it's still thinking, reading, editing or running a command |
+| run several sessions at once | swipe between them right on the notch |
+| keep missing when a task finishes | get a done animation, a sound and a notification that takes you back to the right Terminal tab |
+| hit usage limits or login / network errors | see the cause and what to do next, without digging through the terminal |
+
+It only shows status. It doesn't run commands, change your code, or talk to any AI on its own.
 
 ## Install
 
@@ -74,6 +87,19 @@ Claude Code hook ──> island_hook.py (bundled in the app) ──> ~/.claude/t
 - **No tokens spent, no AI calls.** Everything it shows comes from the files above.
 - **The only network access is the update check**: once an hour it reads the public update list (`appcast.xml`) from GitHub Releases and sends nothing. You can turn it off in Settings → About.
 - **Only two places are ever modified**: `~/.claude/settings.json` when you click Connect (it only adds the island's own hooks, after a backup), and the island's own settings in `~/.claude/tools/island/`.
+
+## Update, uninstall and report issues
+
+**Update:** Agent Island checks for updates every hour. When a new version is out, click **Update** at the top of Settings or in the menu. You can also check manually in Settings → About, or download the zip from [Releases](https://github.com/1413jean/agent-island/releases). See what changed in the [Changelog](CHANGELOG.md).
+
+**Uninstall:**
+
+1. Settings → **Connections** → **Disconnect** (removes the island's hooks from `~/.claude/settings.json`; your other settings stay).
+2. Settings → General → turn off **Launch at login**, then menu bar icon → **Quit**.
+3. Drag **Agent Island.app** to the Trash.
+4. Optional: delete `~/.claude/tools/island/` (the island's own settings and status files).
+
+**Report issues:** open an [Issue](https://github.com/1413jean/agent-island/issues) with your Agent Island version (Settings → About), macOS version, Apple silicon or Intel, whether it's Claude Code or Codex, what you did, and what you expected vs. what happened. Please don't paste private conversations, code or file paths in a public issue.
 
 ## Development
 
