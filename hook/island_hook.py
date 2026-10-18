@@ -60,18 +60,36 @@ def context_tokens(transcript):
     return 0
 
 
-def last_activity(transcript, summary=False):
-    """最後一則回覆的第一行實質內容——也就是「我現在在做什麼」。
+def first_line(text, summary=False):
+    """一則回覆的第一行實質內容。summary=True（任務結束）時，有「result:」那行就用它，沒有才用第一行。"""
+    limit = 56 if summary else 44
+    lines = text.split("\n")
+    if summary:
+        picked = [l for l in lines if re.match(r"^\s*result:", l, re.I)]
+        if picked:
+            lines = [re.sub(r"^\s*result:\s*", "", picked[-1], flags=re.I)]
+    for raw in lines:
+        s = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", raw)
+        s = re.sub(r"^[\s>#*\-]+", "", s)
+        s = re.sub(r"[*`]", "", s)
+        s = re.sub(r"\s+", " ", s).strip()
+        if len(s) < 4 or set(s) <= set("-|: "):
+            continue
+        return s[:limit] + ("…" if len(s) > limit else "")
+    return ""
 
-    summary=True 用在任務結束：回覆裡有「result:」那行就用它（那是整件事的一句話結論），
-    沒有才用第一行。
+
+def last_activity(transcript, summary=False, start=0):
+    """逐字稿裡最後一則回覆的第一行實質內容——也就是「我現在在做什麼」。
+
+    start：只看這個位置之後的內容（這一輪開始時的逐字稿大小），才不會拿到上一個任務的回覆。
     """
     if not transcript:
         return ""
     try:
         size = os.path.getsize(transcript)
         with open(transcript, "rb") as fh:
-            fh.seek(max(0, size - TAIL_BYTES))
+            fh.seek(max(0, start, size - TAIL_BYTES))
             tail = fh.read().decode("utf-8", "ignore")
     except Exception:
         return ""
@@ -88,22 +106,9 @@ def last_activity(transcript, summary=False):
             continue
         blocks = (rec.get("message") or {}).get("content") or []
         text = " ".join(b.get("text", "") for b in blocks if b.get("type") == "text")
-        if not text.strip():
-            continue
-        limit = 56 if summary else 44
-        lines = text.split("\n")
-        if summary:
-            picked = [l for l in lines if re.match(r"^\s*result:", l, re.I)]
-            if picked:
-                lines = [re.sub(r"^\s*result:\s*", "", picked[-1], flags=re.I)]
-        for raw in lines:
-            s = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", raw)
-            s = re.sub(r"^[\s>#*\-]+", "", s)
-            s = re.sub(r"[*`]", "", s)
-            s = re.sub(r"\s+", " ", s).strip()
-            if len(s) < 4 or set(s) <= set("-|: "):
-                continue
-            return s[:limit] + ("…" if len(s) > limit else "")
+        line = first_line(text, summary)
+        if line:
+            return line
     return ""
 
 
@@ -406,7 +411,11 @@ def main():
 
     if event == "Stop":
         # 完成時上面那行寫「完成了什麼」，不是只有一個 Done；系統通知用同一句。
-        summary = last_activity(transcript, summary=True)
+        # 完成的那一刻，最後一則回覆可能還沒寫進逐字稿（會讀到上一個任務的回覆）：
+        # 優先用 Claude Code 直接附上的 last_assistant_message；沒有才從這一輪開始之後的逐字稿找
+        msg = data.get("last_assistant_message") or ""
+        summary = (first_line(msg, summary=True) if isinstance(msg, str) else "") \
+            or last_activity(transcript, summary=True, start=base.get("tstart", 0))
         write_state({**base, "phase": "done", "detail": summary,
                      "label": "Done", "task": ""})
         try:
