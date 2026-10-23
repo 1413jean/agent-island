@@ -88,7 +88,9 @@ def finished(summary, title="Claude Code"):
     body = summary or ("Done" if _english() else "完成了")
     if len(body) > BODY_CHARS:
         body = body[: BODY_CHARS - 1].rstrip() + "…"
-    req = {"title": title, "body": body, "tty": controlling_tty(), "ts": time.time()}
+    # app：任務是在哪個 app 裡跑的（Terminal、Cursor…），macOS 會把開啟它的 app 放在這個環境變數
+    req = {"title": title, "body": body, "tty": controlling_tty(),
+           "app": os.environ.get("__CFBundleIdentifier", ""), "ts": time.time()}
     try:
         os.makedirs(NOTIFY_DIR, exist_ok=True)
         tmp = os.path.join(NOTIFY_DIR, ".%d.tmp" % os.getpid())

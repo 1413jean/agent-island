@@ -1512,8 +1512,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     }
 
     // App 已經在跑、又從「應用程式」或 Spotlight 打開一次：打開設定（選單列 app 的慣例）
+    // 再打開一次 app（Spotlight、Finder）就跳出設定。點通知時 macOS 也會送這個事件，
+    // 所以稍等一下：如果接著收到的是通知點擊，就取消，不跳設定。
+    private var pendingReopen: DispatchWorkItem?
+
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        openTuning()
+        pendingReopen?.cancel()
+        let work = DispatchWorkItem { [weak self] in self?.openTuning() }
+        pendingReopen = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: work)
         return true
     }
 
@@ -1544,9 +1551,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
-        if let tty = response.notification.request.content.userInfo["tty"] as? String {
-            DoneNotifier.focusTerminalTab(tty)          // 完成通知：回到那個 Terminal 分頁
-        } else if response.notification.request.content.threadIdentifier != "done" {
+        pendingReopen?.cancel()                         // 點通知不是「再打開一次 app」，不要跳設定視窗
+        pendingReopen = nil
+        let content = response.notification.request.content
+        if content.threadIdentifier == "done" {
+            DoneNotifier.returnToTask(tty: content.userInfo["tty"] as? String,
+                                      app: content.userInfo["app"] as? String)   // 完成通知：回到任務所在的終端機
+        } else {
             Updater.shared.checkNow()                   // 更新通知：直接打開更新視窗
         }
         completionHandler()
