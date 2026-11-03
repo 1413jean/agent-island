@@ -1175,6 +1175,7 @@ final class IslandController {
     let collapsed: CGSize
     private var leftAt: Date?
     private var enteredAt: Date?
+    private var bodyEnteredAt: Date?
     static let panelHeight: CGFloat = 240
 
     init(screen: NSScreen, primary: Bool, model: StateModel, tuning: TuningStore, presence: Presence) {
@@ -1266,12 +1267,22 @@ final class IslandController {
         let notchH = max(collapsed.height, 6)
         let notch = NSRect(x: screen.frame.midX - max(collapsed.width, 200) / 2 - 12, y: screen.frame.maxY - notchH,
                            width: max(collapsed.width, 200) + 24, height: notchH + 1)
+        // 防誤判：
+        // 1. 要在小島上停一下（0.15 秒）才讓開，只是快速劃過不會先縮再長、連彈兩下。
+        // 2. 讓開後要離開外圍一段距離（28 點）才長回來，指標在邊緣小幅移動不會一直縮放。
         if state.yielded {
-            if !body.contains(p) || notch.contains(p) { state.yielded = false }
+            bodyEnteredAt = nil
+            if !body.insetBy(dx: -28, dy: -28).contains(p) || notch.contains(p) { state.yielded = false }
         } else if body.contains(p) && !notch.contains(p)
                     && isExpanded(model: model, tuning: tuning, hover: state.hover, active: true) {
-            state.yielded = true
-            state.hover = false
+            if bodyEnteredAt == nil { bodyEnteredAt = Date() }
+            if Date().timeIntervalSince(bodyEnteredAt!) > 0.15 {
+                state.yielded = true
+                state.hover = false
+                bodyEnteredAt = nil
+            }
+        } else {
+            bodyEnteredAt = nil
         }
     }
 }

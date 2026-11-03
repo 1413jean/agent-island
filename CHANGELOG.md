@@ -1,5 +1,14 @@
 # Changelog / 變更紀錄
 
+## 1.0.4 — 2026-11-03
+
+- **Smoother hover:** the island only moves aside after the pointer rests on it briefly, so sweeping past no longer makes it shrink and grow back. Once it has moved aside, it waits until the pointer is clearly away before coming back, so small movements near the edge don't make it bounce over and over.
+  **滑鼠判斷更穩：** 指標在小島上停一下才會讓開，只是劃過不會先縮再長；讓開之後要等指標明顯離開才長回來，在邊緣小幅移動不會一直彈跳。
+- **Done notification:** shows the result of the task that just finished, not the previous one.
+  **完成通知：** 顯示剛完成的這個任務，不會再是上一個任務的內容。
+- **Clicking a done notification** takes you back to the terminal where the task ran (the exact Terminal tab, or Cursor and other apps), instead of opening Settings.
+  **點完成通知**會回到任務所在的終端機（Terminal 直接切到那個分頁，Cursor 等其他 app 會叫到前面），不再跳出設定。
+
 ## 1.0.3 — 2026-10-06
 
 - The MIT license now ships inside the app: Settings → About shows what you can do with Agent Island, and **View licenses…** opens the full text, followed by the licenses of the open-source components it uses.
